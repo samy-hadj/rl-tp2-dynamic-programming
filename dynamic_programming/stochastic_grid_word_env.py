@@ -12,7 +12,6 @@ from dynamic_programming.grid_world_env import GridWorldEnv
 
 
 class StochasticGridWorldEnv(GridWorldEnv):
-
     """
     Stochastic version of the GridWorldEnv environment.
     Inherits from GridWorldEnv class.

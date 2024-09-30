@@ -129,3 +129,45 @@ class GridWorldEnv(gym.Env):
                 else:
                     print(self.grid[row, col], end=" ")
             print("")  # Newline at the end of the row
+
+
+### Utilisation de l'algorithme de value iteration :
+
+
+def grid_world_value_iteration(
+    env: GridWorldEnv, max_iter: int = 1000, gamma=1.0, theta=1e-5
+) -> np.ndarray:
+    """
+    Estimation de la fonction de valeur grâce à l'algorithme "value iteration".
+    theta est le seuil de convergence (différence maximale entre deux itérations).
+    """
+    values = np.zeros((4, 4))
+
+    for i in range(max_iter):
+        delta = 0
+        new_values = np.copy(values)
+
+        for row in range(env.height):
+            for col in range(env.width):
+                env.set_state(row, col)
+
+                if env.grid[row, col] in {"W", "P", "N"}:
+                    continue  # Skip walls and terminal states
+
+                value_max = float("-inf")
+
+                for action in range(env.action_space.n):
+                    next_state, reward, is_done, _ = env.step(action, make_move=False)
+                    next_row, next_col = next_state
+                    new_value = reward + gamma * values[next_row, next_col]
+                    value_max = max(value_max, new_value)
+
+                new_values[row, col] = value_max
+                delta = max(delta, abs(new_values[row, col] - values[row, col]))
+
+        values = new_values
+
+        if delta < theta:
+            break
+
+    return values

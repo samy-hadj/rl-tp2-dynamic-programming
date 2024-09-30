@@ -3,6 +3,7 @@ Ce fichier contient des exercices à compléter sur la programmation dynamique.
 Il est évalué automatiquement avec pytest, vous pouvez le lancer avec la
 commande `pytest exercices.py`.
 """
+
 import os
 import random
 import typing as t

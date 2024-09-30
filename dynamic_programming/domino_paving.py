@@ -16,6 +16,18 @@ def domino_paving(n: int) -> int:
     Calcule le nombre de façons de paver un rectangle de dimensions 3xN
     avec des dominos.
     """
-    a = 0
     # BEGIN SOLUTION
+    if n % 2 != 0:
+        return 0
+    if n == 0:
+        return 1
+    if n == 2:
+        return 3
+    dp = [0] * (n + 1)
+    dp[0] = 1
+    dp[2] = 3
+    for i in range(4, n + 1, 2):
+        dp[i] = 4 * dp[i - 2] - dp[i - 4]
+
+    return dp[n]
     # END SOLUTION
