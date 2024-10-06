@@ -26,23 +26,24 @@ def mdp_value_iteration(mdp: MDP, max_iter: int = 1000, gamma=1.0) -> np.ndarray
     """
     values = np.zeros(mdp.observation_space.n)
     # BEGIN SOLUTION
-    for i in range(max_iter):
-        delta = 0
-        new_values = np.copy(values)
-        for state in range(mdp.observation_space.n):
-            value_max = float("-inf")
-            for action in range(mdp.action_space.n):
-                next_state, reward, done = mdp.P[state][action]
-                new_value = reward + gamma * (0 if done else values[next_state])
-                value_max = max(value_max, new_value)
-            new_values[state] = value_max
-            delta = max(delta, abs(new_values[state] - values[state]))
-
-        values = new_values
-        if delta < 1e-5:  # Seuil de convergence
+    iter_count = 0
+    while iter_count < max_iter:
+        pre_values = np.copy(values)
+        s = 0
+        while s < mdp.observation_space.n:
+            value = max(
+                [
+                    mdp.P[s][a][1] + gamma * values[mdp.P[s][a][0]]
+                    for a in range(mdp.action_space.n)
+                ]
+            )
+            values[s] = value
+            s += 1
+        if not np.any(np.abs(values - pre_values) >= 1e-5):  # Inversion de la condition
             break
-    return values
+        iter_count += 1
     # END SOLUTION
+    return values
 
 
 def grid_world_value_iteration(
@@ -57,53 +58,34 @@ def grid_world_value_iteration(
     """
     values = np.zeros((4, 4))
     # BEGIN SOLUTION
-    for i in range(max_iter):
+    iter_count = 0
+    while iter_count < max_iter:
+        prev_val = np.copy(values)
         delta = 0
-        new_values = np.copy(values)
-
-        for row in range(env.height):
-            for col in range(env.width):
-                env.set_state(row, col)
-
-                # Si c'est un mur ou un état terminal, sa valeur est constante
-                if env.grid[row, col] == "W":
-                    continue
-                elif env.grid[row, col] == "P":
-                    new_values[row, col] = 1.0
-                    continue
-                elif env.grid[row, col] == "N":
-                    new_values[row, col] = -1.0
-                    continue
-
-                # Calcul de la valeur maximale pour les actions possibles
-                value_max = float("-inf")
-                for action in range(env.action_space.n):
-                    next_state, reward, is_done, _ = env.step(action, make_move=False)
-                    next_row, next_col = next_state
-                    new_value = reward + gamma * values[next_row, next_col]
-                    value_max = max(value_max, new_value)
-
-                # Mettre à jour la valeur pour la case courante
-                new_values[row, col] = value_max
-                delta = max(delta, abs(new_values[row, col] - values[row, col]))
-
-        values = new_values
-
-        # Arrêter si les valeurs ont convergé
-        if delta < theta:
+        row = 0
+        while row < 4:
+            col = 0
+            while col < 4:
+                env.current_position = (row, col)
+                delta += value_iteration_per_state(env, values, gamma, prev_val, delta)
+                col += 1
+            row += 1
+        if not delta >= theta:  # Inversion de la condition
             break
+        iter_count += 1
     return values
     # END SOLUTION
 
 
-def value_iteration_per_state(env, values, gamma, prev_val, delta):
+def value_iteration_per_state(env: GridWorldEnv, values, gamma, prev_val, delta):
+    # BEGIN SOLUTION
     row, col = env.current_position
     values[row, col] = float("-inf")
-    for action in range(env.action_space.n):
+    action = 0
+    while action < env.action_space.n:
         next_states = env.get_next_states(action=action)
         current_sum = 0
         for next_state, reward, probability, _, _ in next_states:
-            # print((row, col), next_state, reward, probability)
             next_row, next_col = next_state
             current_sum += (
                 probability
@@ -111,8 +93,10 @@ def value_iteration_per_state(env, values, gamma, prev_val, delta):
                 * (reward + gamma * prev_val[next_row, next_col])
             )
         values[row, col] = max(values[row, col], current_sum)
+        action += 1
     delta = max(delta, np.abs(values[row, col] - prev_val[row, col]))
     return delta
+    # END SOLUTION
 
 
 def stochastic_grid_world_value_iteration(
@@ -122,33 +106,19 @@ def stochastic_grid_world_value_iteration(
     theta: float = 1e-5,
 ) -> np.ndarray:
     values = np.zeros((4, 4))
-    # BEGIN SOLUTION
-    for i in range(max_iter):
+    iter_count = 0
+    while iter_count < max_iter:
+        prev_val = np.copy(values)
         delta = 0
-        prev_values = np.copy(values)
-        for row in range(4):
-            for col in range(4):
-                env.set_state(row, col)
-
-                # Skip walls and terminal states
-                if env.grid[row, col] in {"W", "P", "N"}:
-                    continue
-
-                value_max = float("-inf")
-                for action in range(env.action_space.n):
-                    next_states = env.get_next_states(action)
-                    value_sum = 0
-                    for next_state, reward, probability, _, _ in next_states:
-                        next_row, next_col = next_state
-                        value_sum += probability * (
-                            reward + gamma * prev_values[next_row, next_col]
-                        )
-                    value_max = max(value_max, value_sum)
-
-                values[row, col] = value_max
-                delta = max(delta, abs(values[row, col] - prev_values[row, col]))
-
-        if delta < theta:
+        row = 0
+        while row < 4:
+            col = 0
+            while col < 4:
+                env.current_position = (row, col)
+                delta += value_iteration_per_state(env, values, gamma, prev_val, delta)
+                col += 1
+            row += 1
+        if not delta >= theta:  # Inversion de la condition
             break
+        iter_count += 1
     return values
-    # END SOLUTION

@@ -13,10 +13,6 @@ from gym import spaces
 # terminal avec une récompense de +1. Tout autre état a une récompense de 0.
 # L'agent commence dans la case (0, 0).
 
-# Complétez la classe ci-dessous pour implémenter ce MDP.
-# Puis, utilisez l'algorithme de value iteration pour calculer la fonction de
-# valeur de chaque état.
-
 
 class GridWorldEnv(gym.Env):
     metadata = {"render.modes": ["human"]}
@@ -117,57 +113,30 @@ class GridWorldEnv(gym.Env):
 
         return next_state, reward, is_done, {}
 
+    def get_next_states(self, action: int) -> list[tuple[int, float, float, bool]]:
+        next_state, reward, is_done, _ = self.step(action, make_move=False)
+        res = []
+
+        i = 0
+        while i < 1:
+            res.append((next_state, reward, 1, is_done, action))
+            i += 1
+
+        return res
+
     def reset(self):
         self.current_position = (3, 0)  # Start Position
         return self.current_position
 
     def render(self):
-        for row in range(4):
-            for col in range(4):
+        row = 0
+        while row < 4:
+            col = 0
+            while col < 4:
                 if self.current_position == tuple([row, col]):
                     print("X", end=" ")
                 else:
                     print(self.grid[row, col], end=" ")
+                col += 1
+            row += 1
             print("")  # Newline at the end of the row
-
-
-### Utilisation de l'algorithme de value iteration :
-
-
-def grid_world_value_iteration(
-    env: GridWorldEnv, max_iter: int = 1000, gamma=1.0, theta=1e-5
-) -> np.ndarray:
-    """
-    Estimation de la fonction de valeur grâce à l'algorithme "value iteration".
-    theta est le seuil de convergence (différence maximale entre deux itérations).
-    """
-    values = np.zeros((4, 4))
-
-    for i in range(max_iter):
-        delta = 0
-        new_values = np.copy(values)
-
-        for row in range(env.height):
-            for col in range(env.width):
-                env.set_state(row, col)
-
-                if env.grid[row, col] in {"W", "P", "N"}:
-                    continue  # Skip walls and terminal states
-
-                value_max = float("-inf")
-
-                for action in range(env.action_space.n):
-                    next_state, reward, is_done, _ = env.step(action, make_move=False)
-                    next_row, next_col = next_state
-                    new_value = reward + gamma * values[next_row, next_col]
-                    value_max = max(value_max, new_value)
-
-                new_values[row, col] = value_max
-                delta = max(delta, abs(new_values[row, col] - values[row, col]))
-
-        values = new_values
-
-        if delta < theta:
-            break
-
-    return values
